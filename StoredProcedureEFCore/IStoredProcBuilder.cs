@@ -71,7 +71,7 @@ namespace StoredProcedureEFCore
     /// <typeparam name="T">Type of the parameter. Can be nullable</typeparam>
     /// <param name="retParam">Created parameter. Value will be populated after calling <see cref="Exec(Action{DbDataReader})"/></param>
     /// <returns></returns>
-        IStoredProcBuilder ReturnValue<T>(out IOutParam<T> retParam);
+    IStoredProcBuilder ReturnValue<T>(out IOutParam<T> retParam);
     
     /// <summary>
     /// Add return value parameter

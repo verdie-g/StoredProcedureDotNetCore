@@ -61,7 +61,7 @@ namespace StoredProcedureEFCore
 
     public IStoredProcBuilder AddParam(DbParameter parameter)
     {
-      if(parameter == null)
+      if (parameter == null)
       {
           throw new ArgumentNullException(nameof(parameter));
       }
@@ -81,7 +81,7 @@ namespace StoredProcedureEFCore
       retParam = AddOutputParamInner(_retParamName, default(T), ParameterDirection.ReturnValue, extra);
       return this;
     }
-    
+
     public IStoredProcBuilder SetTimeout(int timeout)
     {
       _cmd.CommandTimeout = timeout;
