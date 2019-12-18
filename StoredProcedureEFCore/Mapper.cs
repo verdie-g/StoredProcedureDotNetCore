@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace StoredProcedureEFCore
@@ -42,11 +43,21 @@ namespace StoredProcedureEFCore
         /// Map <see cref="DbDataReader"/> to a T and apply an action on it for each row
         /// </summary>
         /// <param name="action">Action to apply to each row</param>
-        public async Task MapAsync(Action<T> action)
+        public Task MapAsync(Action<T> action)
         {
-            while (await _reader.ReadAsync())
+            return MapAsync(action, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Map <see cref="DbDataReader"/> to a T and apply an action on it for each row
+        /// </summary>
+        /// <param name="action">Action to apply to each row</param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        public async Task MapAsync(Action<T> action, CancellationToken cancellationToken)
+        {
+            while (await _reader.ReadAsync(cancellationToken))
             {
-                T row = await MapNextRowAsync();
+                T row = await MapNextRowAsync(cancellationToken);
                 action(row);
             }
         }
@@ -62,12 +73,17 @@ namespace StoredProcedureEFCore
             return row;
         }
 
-        public async Task<T> MapNextRowAsync()
+        public Task<T> MapNextRowAsync()
+        {
+            return MapNextRowAsync(CancellationToken.None);
+        }
+
+        public async Task<T> MapNextRowAsync(CancellationToken cancellationToken)
         {
             T row = new T();
             for (int i = 0; i < _properties.Length; ++i)
             {
-                object value = await _reader.IsDBNullAsync(_properties[i].ColumnOrdinal) ? null : _reader.GetValue(_properties[i].ColumnOrdinal);
+                object value = await _reader.IsDBNullAsync(_properties[i].ColumnOrdinal, cancellationToken) ? null : _reader.GetValue(_properties[i].ColumnOrdinal);
                 _properties[i].Setter(row, value);
             }
             return row;

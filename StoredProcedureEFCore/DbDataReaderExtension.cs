@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace StoredProcedureEFCore
@@ -30,13 +31,26 @@ namespace StoredProcedureEFCore
         /// <typeparam name="T">Model</typeparam>
         /// <param name="reader"></param>
         /// <returns></returns>
-        public static async Task<List<T>> ToListAsync<T>(this DbDataReader reader) where T : class, new()
+        public static Task<List<T>> ToListAsync<T>(this DbDataReader reader) where T : class, new()
+        {
+            return ToListAsync<T>(reader, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Map data source to a list
+        /// </summary>
+        /// <typeparam name="T">Model</typeparam>
+        /// <param name="reader"></param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static async Task<List<T>> ToListAsync<T>(this DbDataReader reader, CancellationToken cancellationToken) where T : class, new()
         {
             var res = new List<T>();
             var mapper = new Mapper<T>(reader);
-            await mapper.MapAsync(row => res.Add(row));
+            await mapper.MapAsync(row => res.Add(row), cancellationToken);
             return res;
         }
+
 
         /// <summary>
         /// Map the first column to a list
@@ -80,6 +94,7 @@ namespace StoredProcedureEFCore
             return res;
         }
 
+
         /// <summary>
         /// Map the first column to a list
         /// </summary>
@@ -88,7 +103,19 @@ namespace StoredProcedureEFCore
         /// <returns></returns>
         public static Task<List<T>> ColumnAsync<T>(this DbDataReader reader) where T : IComparable
         {
-            return ColumnAsync<T>(reader, 0);
+            return ColumnAsync<T>(reader, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Map the first column to a list
+        /// </summary>
+        /// <typeparam name="T">Model</typeparam>
+        /// <param name="reader"></param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static Task<List<T>> ColumnAsync<T>(this DbDataReader reader, CancellationToken cancellationToken) where T : IComparable
+        {
+            return ColumnAsync<T>(reader, 0, cancellationToken);
         }
 
         /// <summary>
@@ -100,8 +127,21 @@ namespace StoredProcedureEFCore
         /// <returns></returns>
         public static Task<List<T>> ColumnAsync<T>(this DbDataReader reader, string columnName) where T : IComparable
         {
+            return ColumnAsync<T>(reader, columnName, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Map the specified column to a list
+        /// </summary>
+        /// <typeparam name="T">Model</typeparam>
+        /// <param name="reader"></param>
+        /// <param name="columnName">Name of the column to read. Use first column if null</param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static Task<List<T>> ColumnAsync<T>(this DbDataReader reader, string columnName, CancellationToken cancellationToken) where T : IComparable
+        {
             int ordinal = columnName is null ? 0 : reader.GetOrdinal(columnName);
-            return ColumnAsync<T>(reader, ordinal);
+            return ColumnAsync<T>(reader, ordinal, cancellationToken);
         }
 
         /// <summary>
@@ -111,12 +151,25 @@ namespace StoredProcedureEFCore
         /// <param name="reader"></param>
         /// <param name="ordinal">Zero-based column ordinal</param>
         /// <returns></returns>
-        public static async Task<List<T>> ColumnAsync<T>(this DbDataReader reader, int ordinal) where T : IComparable
+        public static Task<List<T>> ColumnAsync<T>(this DbDataReader reader, int ordinal) where T : IComparable
+        {
+            return ColumnAsync<T>(reader, ordinal, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Map the specified column to a list
+        /// </summary>
+        /// <typeparam name="T">Model</typeparam>
+        /// <param name="reader"></param>
+        /// <param name="ordinal">Zero-based column ordinal</param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static async Task<List<T>> ColumnAsync<T>(this DbDataReader reader, int ordinal, CancellationToken cancellationToken) where T : IComparable
         {
             var res = new List<T>();
-            while (await reader.ReadAsync())
+            while (await reader.ReadAsync(cancellationToken))
             {
-                T value = await reader.IsDBNullAsync(ordinal) ? default(T) : (T) reader.GetValue(ordinal);
+                T value = await reader.IsDBNullAsync(ordinal, cancellationToken) ? default(T) : (T) reader.GetValue(ordinal);
                 res.Add(value);
             }
             return res;
@@ -150,7 +203,20 @@ namespace StoredProcedureEFCore
         /// <param name="keyProjection">Projection to get the key</param>
         /// <param name="reader"></param>
         /// <returns></returns>
-        public static async Task<Dictionary<TKey, TValue>> ToDictionaryAsync<TKey, TValue>(this DbDataReader reader, Func<TValue, TKey> keyProjection) where TKey : IComparable where TValue : class, new()
+        public static Task<Dictionary<TKey, TValue>> ToDictionaryAsync<TKey, TValue>(this DbDataReader reader, Func<TValue, TKey> keyProjection) where TKey : IComparable where TValue : class, new()
+        {
+            return ToDictionaryAsync<TKey, TValue>(reader, keyProjection, CancellationToken.None);
+        }
+        /// <summary>
+        /// Create a dictionary. Keys must be unique
+        /// </summary>
+        /// <typeparam name="TKey">Type of the keys</typeparam>
+        /// <typeparam name="TValue">Type of the values</typeparam>
+        /// <param name="keyProjection">Projection to get the key</param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static async Task<Dictionary<TKey, TValue>> ToDictionaryAsync<TKey, TValue>(this DbDataReader reader, Func<TValue, TKey> keyProjection, CancellationToken cancellationToken) where TKey : IComparable where TValue : class, new()
         {
             var res = new Dictionary<TKey, TValue>();
             var mapper = new Mapper<TValue>(reader);
@@ -158,7 +224,9 @@ namespace StoredProcedureEFCore
             {
                 TKey key = keyProjection(val);
                 res[key] = val;
-            });
+            },
+            cancellationToken);
+
             return res;
         }
 
@@ -198,7 +266,21 @@ namespace StoredProcedureEFCore
         /// <param name="reader"></param>
         /// <param name="keyProjection">Projection to get the key</param>
         /// <returns></returns>
-        public static async Task<Dictionary<TKey, List<TValue>>> ToLookupAsync<TKey, TValue>(this DbDataReader reader, Func<TValue, TKey> keyProjection) where TKey : IComparable where TValue : class, new()
+        public static Task<Dictionary<TKey, List<TValue>>> ToLookupAsync<TKey, TValue>(this DbDataReader reader, Func<TValue, TKey> keyProjection) where TKey : IComparable where TValue : class, new()
+        {
+            return ToLookupAsync<TKey, TValue>(reader, keyProjection, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Create a dictionary
+        /// </summary>
+        /// <typeparam name="TKey">Type of the keys</typeparam>
+        /// <typeparam name="TValue">Type of the values</typeparam>
+        /// <param name="reader"></param>
+        /// <param name="keyProjection">Projection to get the key</param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static async Task<Dictionary<TKey, List<TValue>>> ToLookupAsync<TKey, TValue>(this DbDataReader reader, Func<TValue, TKey> keyProjection, CancellationToken cancellationToken) where TKey : IComparable where TValue : class, new()
         {
             var res = new Dictionary<TKey, List<TValue>>();
             var mapper = new Mapper<TValue>(reader);
@@ -214,7 +296,9 @@ namespace StoredProcedureEFCore
                 {
                     res[key] = new List<TValue>() { val };
                 }
-            });
+            },
+            cancellationToken);
+
             return res;
         }
 
@@ -241,10 +325,22 @@ namespace StoredProcedureEFCore
         /// <typeparam name="T"></typeparam>
         /// <param name="reader"></param>
         /// <returns></returns>
-        public static async Task<HashSet<T>> ToSetAsync<T>(this DbDataReader reader) where T : IComparable
+        public static Task<HashSet<T>> ToSetAsync<T>(this DbDataReader reader) where T : IComparable
+        {
+            return ToSetAsync<T>(reader, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Create a set with the first column
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="reader"></param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static async Task<HashSet<T>> ToSetAsync<T>(this DbDataReader reader, CancellationToken cancellationToken) where T : IComparable
         {
             var res = new HashSet<T>();
-            while (await reader.ReadAsync())
+            while (await reader.ReadAsync(cancellationToken))
             {
                 T val = (T) reader.GetValue(0);
                 res.Add(val);
@@ -304,7 +400,19 @@ namespace StoredProcedureEFCore
         /// <returns></returns>
         public static Task<T> FirstAsync<T>(this DbDataReader reader) where T : class, new()
         {
-            return FirstAsync<T>(reader, false, false);
+            return FirstAsync<T>(reader, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Read first row
+        /// </summary>
+        /// <typeparam name="T">Model</typeparam>
+        /// <param name="reader"></param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static Task<T> FirstAsync<T>(this DbDataReader reader, CancellationToken cancellationToken) where T : class, new()
+        {
+            return FirstAsync<T>(reader, false, false, cancellationToken);
         }
 
         /// <summary>
@@ -315,7 +423,19 @@ namespace StoredProcedureEFCore
         /// <returns></returns>
         public static Task<T> FirstOrDefaultAsync<T>(this DbDataReader reader) where T : class, new()
         {
-            return FirstAsync<T>(reader, true, false);
+            return FirstOrDefaultAsync<T>(reader, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Read first row or return default value if the data source is empty
+        /// </summary>
+        /// <typeparam name="T">Model</typeparam>
+        /// <param name="reader"></param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static Task<T> FirstOrDefaultAsync<T>(this DbDataReader reader, CancellationToken cancellationToken) where T : class, new()
+        {
+            return FirstAsync<T>(reader, true, false, cancellationToken);
         }
 
         /// <summary>
@@ -326,7 +446,19 @@ namespace StoredProcedureEFCore
         /// <returns></returns>
         public static Task<T> SingleAsync<T>(this DbDataReader reader) where T : class, new()
         {
-            return FirstAsync<T>(reader, false, true);
+            return SingleAsync<T>(reader, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Read first row or throw an exception if data source contains more than one row
+        /// </summary>
+        /// <typeparam name="T">Model</typeparam>
+        /// <param name="reader"></param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static Task<T> SingleAsync<T>(this DbDataReader reader, CancellationToken cancellationToken) where T : class, new()
+        {
+            return FirstAsync<T>(reader, false, true, cancellationToken);
         }
 
         /// <summary>
@@ -337,7 +469,19 @@ namespace StoredProcedureEFCore
         /// <returns></returns>
         public static Task<T> SingleOrDefaultAsync<T>(this DbDataReader reader) where T : class, new()
         {
-            return FirstAsync<T>(reader, true, true);
+            return SingleOrDefaultAsync<T>(reader, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Read first row or return default value if the data source is empty
+        /// </summary>
+        /// <typeparam name="T">Model</typeparam>
+        /// <param name="reader"></param>
+        /// <param name="cancellationToken">The cancellation instruction, which propagates a notification that operations should be canceled</param>
+        /// <returns></returns>
+        public static Task<T> SingleOrDefaultAsync<T>(this DbDataReader reader, CancellationToken cancellationToken) where T : class, new()
+        {
+            return FirstAsync<T>(reader, true, true, cancellationToken);
         }
 
         private static T First<T>(DbDataReader reader, bool orDefault, bool throwIfNotSingle) where T : class, new()
@@ -359,14 +503,14 @@ namespace StoredProcedureEFCore
             throw new InvalidOperationException(NoElementError);
         }
 
-        private static async Task<T> FirstAsync<T>(DbDataReader reader, bool orDefault, bool throwIfNotSingle) where T : class, new()
+        private static async Task<T> FirstAsync<T>(DbDataReader reader, bool orDefault, bool throwIfNotSingle, CancellationToken cancellationToken) where T : class, new()
         {
-            if (await reader.ReadAsync())
+            if (await reader.ReadAsync(cancellationToken))
             {
                 var mapper = new Mapper<T>(reader);
-                T row = await mapper.MapNextRowAsync();
+                T row = await mapper.MapNextRowAsync(cancellationToken);
 
-                if (throwIfNotSingle && await reader.ReadAsync())
+                if (throwIfNotSingle && await reader.ReadAsync(cancellationToken))
                     throw new InvalidOperationException(MoreThanOneElementError);
 
                 return row;
