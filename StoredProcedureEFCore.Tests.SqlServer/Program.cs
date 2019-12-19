@@ -150,7 +150,7 @@ namespace StoredProcedureEFCore.Tests.SqlServer
             try
             {
                 Console.WriteLine("\n====================================");
-                Console.WriteLine($"Starting long-running call #{callId}");
+                Console.WriteLine($"Starting long-running call #{callId}...");
 
                 using (var cts = new CancellationTokenSource())
                 {
@@ -201,7 +201,7 @@ namespace StoredProcedureEFCore.Tests.SqlServer
             try
             {
                 Console.WriteLine("\n====================================");
-                Console.WriteLine($"Starting long-running call #{callId}");
+                Console.WriteLine($"Starting long-running call #{callId}...");
 
                 using (var cts = new CancellationTokenSource())
                 {
@@ -241,8 +241,9 @@ namespace StoredProcedureEFCore.Tests.SqlServer
         static async Task CancelTokenAsync(int callId, int delayMilliseconds, CancellationTokenSource cts)
         {
             await Task.Delay(delayMilliseconds);
+
+            Console.WriteLine($"Cancelling call #{callId}...");
             cts.Cancel();
-            Console.WriteLine($"Cancelled call {callId}");
         }
     }
 }
