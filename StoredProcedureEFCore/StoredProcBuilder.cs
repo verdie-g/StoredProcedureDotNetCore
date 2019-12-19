@@ -129,10 +129,24 @@ namespace StoredProcedureEFCore
 
             try
             {
-                await OpenConnectionAsync();
+                await OpenConnectionAsync(cancellationToken);
                 using (DbDataReader r = await _cmd.ExecuteReaderAsync(cancellationToken))
                 {
-                    await action(r);
+                    try
+                    {
+                        await action(r);
+                    }
+                    catch(Exception)
+                    {
+                        // In case the action bombs out, cancel the command and rethrow to propagate the actual action exception.
+                        // If we don't cancel the command, we will be stuck on disposing of the reader until the sproc completes, even though the action has already thrown an exception.
+                        // This is also the case when the cancellation token is cancelled after the action exception but before the sproc completes:
+                        // we will still be stuck on disposing of the reader until the sproc completes.
+                        // This is caused by the fact that DbDataReader.Dispose does not react to cancellations and simply waits for the sproc to complete.
+                        // The only way to cancel the execution when the reader has been engaged and the action has thrown, is to cancel the command.
+                        _cmd.Cancel();
+                        throw;
+                    }
                 }
             }
             finally
@@ -164,7 +178,7 @@ namespace StoredProcedureEFCore
         {
             try
             {
-                await OpenConnectionAsync();
+                await OpenConnectionAsync(cancellationToken);
                 await _cmd.ExecuteNonQueryAsync(cancellationToken);
             }
             finally
@@ -196,7 +210,7 @@ namespace StoredProcedureEFCore
         {
             try
             {
-                await OpenConnectionAsync();
+                await OpenConnectionAsync(cancellationToken);
                 object scalar = await _cmd.ExecuteScalarAsync(cancellationToken);
                 T val = DefaultIfDBNull<T>(scalar);
                 action(val);
@@ -245,11 +259,11 @@ namespace StoredProcedureEFCore
             }
         }
 
-        private Task OpenConnectionAsync()
+        private Task OpenConnectionAsync(CancellationToken cancellationToken)
         {
             if (_cmd.Connection.State == ConnectionState.Closed)
             {
-                return _cmd.Connection.OpenAsync();
+                return _cmd.Connection.OpenAsync(cancellationToken);
             }
             return Task.CompletedTask;
         }
