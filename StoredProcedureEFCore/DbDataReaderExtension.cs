@@ -517,7 +517,8 @@ namespace StoredProcedureEFCore
                 // If we leave out of here without looping over the remaining records, a long running sproc
                 // will run to its end with no chance to be cancelled.
                 // This is caused by the fact that DbDataReader.Dispose does not react to cancellations and simply waits for the sproc to complete.
-                while (await reader.ReadAsync(cancellationToken)) ;
+                while (await reader.ReadAsync(cancellationToken))
+                    continue;
 
                 return row;
             }

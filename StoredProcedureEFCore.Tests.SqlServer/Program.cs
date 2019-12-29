@@ -113,36 +113,36 @@ namespace StoredProcedureEFCore.Tests.SqlServer
 
             // Test DbDataReader extension method cacellations.
 
-            await TestCancelBeforeResultset(ctx, 1, async (r, ct) => await r.ToListAsync<Model>(ct));
-            await TestCancelAfterResultset(ctx, 2, async (r, ct) => await r.ToListAsync<Model>(ct));
+            await TestCancelBeforeResultSet(ctx, 1, (r, ct) => r.ToListAsync<Model>(ct));
+            await TestCancelAfterResultSet(ctx, 2, (r, ct) => r.ToListAsync<Model>(ct));
 
-            await TestCancelBeforeResultset(ctx, 3, async (r, ct) => await r.ColumnAsync<Int64>("id", ct));
-            await TestCancelAfterResultset(ctx, 4, async (r, ct) => await r.ColumnAsync<Int64>("id", ct));
+            await TestCancelBeforeResultSet(ctx, 3, (r, ct) => r.ColumnAsync<long>("id", ct));
+            await TestCancelAfterResultSet(ctx, 4, (r, ct) => r.ColumnAsync<long>("id", ct));
 
-            await TestCancelBeforeResultset(ctx, 5, async (r, ct) => await r.ToDictionaryAsync<Int64, Model>(m => m.Id, ct));
-            await TestCancelAfterResultset(ctx, 6, async (r, ct) => await r.ToDictionaryAsync<Int64, Model>(m => m.Id, ct));
+            await TestCancelBeforeResultSet(ctx, 5, (r, ct) => r.ToDictionaryAsync<long, Model>(m => m.Id, ct));
+            await TestCancelAfterResultSet(ctx, 6, (r, ct) => r.ToDictionaryAsync<long, Model>(m => m.Id, ct));
 
-            await TestCancelBeforeResultset(ctx, 7, async (r, ct) => await r.ToLookupAsync<Int64, Model>(m => m.Id, ct));
-            await TestCancelAfterResultset(ctx, 8, async (r, ct) => await r.ToLookupAsync<Int64, Model>(m => m.Id, ct));
+            await TestCancelBeforeResultSet(ctx, 7, (r, ct) => r.ToLookupAsync<long, Model>(m => m.Id, ct));
+            await TestCancelAfterResultSet(ctx, 8, (r, ct) => r.ToLookupAsync<long, Model>(m => m.Id, ct));
 
-            await TestCancelBeforeResultset(ctx, 9, async (r, ct) => await r.ToSetAsync<Int64>(ct));
-            await TestCancelAfterResultset(ctx, 10, async (r, ct) => await r.ToSetAsync<Int64>(ct));
+            await TestCancelBeforeResultSet(ctx, 9, (r, ct) => r.ToSetAsync<long>(ct));
+            await TestCancelAfterResultSet(ctx, 10, (r, ct) => r.ToSetAsync<long>(ct));
 
-            await TestCancelBeforeResultset(ctx, 11, async (r, ct) => await r.FirstAsync<Model>(ct));
-            await TestCancelAfterResultset(ctx, 12, async (r, ct) => await r.FirstAsync<Model>(ct));
+            await TestCancelBeforeResultSet(ctx, 11, (r, ct) => r.FirstAsync<Model>(ct));
+            await TestCancelAfterResultSet(ctx, 12, (r, ct) => r.FirstAsync<Model>(ct));
 
-            await TestCancelBeforeResultset(ctx, 13, async (r, ct) => await r.SingleAsync<Model>(ct), 1);
-            await TestCancelAfterResultset(ctx, 14, async (r, ct) => await r.SingleAsync<Model>(ct), 1);
+            await TestCancelBeforeResultSet(ctx, 13, (r, ct) => r.SingleAsync<Model>(ct), 1);
+            await TestCancelAfterResultSet(ctx, 14, (r, ct) => r.SingleAsync<Model>(ct), 1);
 
-            await TestCancelBeforeResultset(ctx, 15, async (r, ct) => await r.SingleOrDefaultAsync<Model>(ct), 1);
-            await TestCancelAfterResultset(ctx, 16, async (r, ct) => await r.SingleOrDefaultAsync<Model>(ct), 1);
+            await TestCancelBeforeResultSet(ctx, 15, (r, ct) => r.SingleOrDefaultAsync<Model>(ct), 1);
+            await TestCancelAfterResultSet(ctx, 16, (r, ct) => r.SingleOrDefaultAsync<Model>(ct), 1);
         }
 
 #pragma warning disable AsyncFixer04 // A disposable object used in a fire & forget async call
         /// <summary>
         /// Test async cancellation where the sproc is cancelled before it has a chance to produce a resultset.
         /// </summary>
-        static async Task TestCancelBeforeResultset(DbContext ctx, int callId, Func<DbDataReader, CancellationToken, Task> action, Int64 limit = 9223372036854775807)
+        static async Task TestCancelBeforeResultSet(DbContext ctx, int callId, Func<DbDataReader, CancellationToken, Task> action, long limit = long.MaxValue)
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -156,8 +156,8 @@ namespace StoredProcedureEFCore.Tests.SqlServer
                 {
                     var sprocTask = ctx.LoadStoredProc("dbo.ListAll")
                         .AddParam("limit", limit)
-                        .AddParam("delay_in_seconds_before_resultset", 10)
-                        .ExecAsync(async r => await action(r, cts.Token), cts.Token);
+                        .AddParam("delay_in_seconds_before_result_set", 10)
+                        .ExecAsync(r => action(r, cts.Token), cts.Token);
 
                     // Cancel the task after one second.
                     var cancelTask = CancelTokenAsync(callId, 1000, cts);
@@ -193,7 +193,7 @@ namespace StoredProcedureEFCore.Tests.SqlServer
         /// <summary>
         /// Test async cancellation where the sproc is cancelled after it has produced some resultset, but it's still actively working.
         /// </summary>
-        static async Task TestCancelAfterResultset(DbContext ctx, int callId, Func<DbDataReader, CancellationToken, Task> action, Int64 limit = 9223372036854775807)
+        static async Task TestCancelAfterResultSet(DbContext ctx, int callId, Func<DbDataReader, CancellationToken, Task> action, long limit = 9223372036854775807)
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -207,7 +207,7 @@ namespace StoredProcedureEFCore.Tests.SqlServer
                 {
                     var sprocTask = ctx.LoadStoredProc("dbo.ListAll")
                         .AddParam("limit", limit)
-                        .AddParam("delay_in_seconds_after_resultset", 10)
+                        .AddParam("delay_in_seconds_after_result_set", 10)
                         .ExecAsync(async r => await action(r, cts.Token), cts.Token);
 
                     // Cancel the task after one second.
