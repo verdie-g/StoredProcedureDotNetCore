@@ -1,10 +1,9 @@
 language: csharp
 dist: xenial
-sudo: required
 mono: none
-dotnet: 2.2
-before_script: 
+dotnet: 3.1
+install:
   - dotnet restore
 script:
   - dotnet build StoredProcedureEFCore -c Release
-  - dotnet test StoredProcedureEFCore.Tests
+  - dotnet test StoredProcedureEFCore.UTest

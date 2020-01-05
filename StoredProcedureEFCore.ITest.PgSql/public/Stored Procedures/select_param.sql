@@ -1,0 +1,5 @@
+CREATE OR REPLACE FUNCTION select_param(n INT) RETURNS INT AS $$
+BEGIN
+    RETURN n;
+END
+$$ LANGUAGE plpgsql;

@@ -3,13 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29411.108
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StoredProcedureEFCore.Tests.SqlServer", "StoredProcedureEFCore.Tests.SqlServer\StoredProcedureEFCore.Tests.SqlServer.csproj", "{B0106B50-2BA8-4DF1-87C9-18EF750495EF}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StoredProcedureEFCore.Tests", "StoredProcedureEFCore.Tests\StoredProcedureEFCore.Tests.csproj", "{5D2098BD-42DB-48D5-8AF9-90796F436538}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StoredProcedureEFCore.Tests.PgSql", "StoredProcedureEFCore.Tests.PgSql\StoredProcedureEFCore.Tests.PgSql.csproj", "{8CD344F4-31A9-4A7F-AF62-0DC9A08C98F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StoredProcedureEFCore.UTest", "StoredProcedureEFCore.UTest\StoredProcedureEFCore.UTest.csproj", "{5D2098BD-42DB-48D5-8AF9-90796F436538}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StoredProcedureEFCore", "StoredProcedureEFCore\StoredProcedureEFCore.csproj", "{654361F1-5E5A-4C9E-8A12-CF2F682D5CB7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoredProcedureEFCore.ITest", "StoredProcedureEFCore.ITest\StoredProcedureEFCore.ITest.csproj", "{97194603-F1F8-400E-8621-3CB61AD5659E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,22 +15,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{B0106B50-2BA8-4DF1-87C9-18EF750495EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B0106B50-2BA8-4DF1-87C9-18EF750495EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B0106B50-2BA8-4DF1-87C9-18EF750495EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B0106B50-2BA8-4DF1-87C9-18EF750495EF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5D2098BD-42DB-48D5-8AF9-90796F436538}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5D2098BD-42DB-48D5-8AF9-90796F436538}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5D2098BD-42DB-48D5-8AF9-90796F436538}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5D2098BD-42DB-48D5-8AF9-90796F436538}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8CD344F4-31A9-4A7F-AF62-0DC9A08C98F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8CD344F4-31A9-4A7F-AF62-0DC9A08C98F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8CD344F4-31A9-4A7F-AF62-0DC9A08C98F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8CD344F4-31A9-4A7F-AF62-0DC9A08C98F9}.Release|Any CPU.Build.0 = Release|Any CPU
 		{654361F1-5E5A-4C9E-8A12-CF2F682D5CB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{654361F1-5E5A-4C9E-8A12-CF2F682D5CB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{654361F1-5E5A-4C9E-8A12-CF2F682D5CB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{654361F1-5E5A-4C9E-8A12-CF2F682D5CB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97194603-F1F8-400E-8621-3CB61AD5659E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97194603-F1F8-400E-8621-3CB61AD5659E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97194603-F1F8-400E-8621-3CB61AD5659E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97194603-F1F8-400E-8621-3CB61AD5659E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
