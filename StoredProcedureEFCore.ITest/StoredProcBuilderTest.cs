@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ namespace StoredProcedureEFCore.ITest
 {
     [TestFixture(DbProvider.PgSql)]
     [TestFixture(DbProvider.SqlServer)]
+    [NonParallelizable]
     public class StoredProcBuilderTest
     {
         private static readonly Table1 T1 = new Table1
@@ -47,7 +49,7 @@ namespace StoredProcedureEFCore.ITest
         }
 
         [SetUp]
-        public void SetUp()
+        public async Task SetUp()
         {
             var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
             switch (_dbProvider)
@@ -62,13 +64,13 @@ namespace StoredProcedureEFCore.ITest
 
             _db = new TestContext(optionsBuilder.Options);
             _db.Table1.RemoveRange(_db.Table1);
-            _db.SaveChanges();
+            await _db.SaveChangesAsync();
         }
 
         [TearDown]
-        public void TearDown()
+        public Task TearDown()
         {
-            _db.Dispose();
+            return _db.DisposeAsync().AsTask();
         }
 
         [Test]
@@ -202,6 +204,78 @@ namespace StoredProcedureEFCore.ITest
             );
         }
 
+        [Test]
+        [TestCase(2, 0)]
+        [TestCase(0, 2)]
+        public Task ToListAsyncCancellation(int delayBefore, int delayAfter)
+        {
+            return TestCancellation((r, ct) => r.ToListAsync<Model>(ct), delayBefore: delayBefore, delayAfter);
+        }
+
+        [Test]
+        [TestCase(2, 0)]
+        [TestCase(0, 2)]
+        public Task ToDictionaryAsyncCancellation(int delayBefore, int delayAfter)
+        {
+            return TestCancellation((r, ct) => r.ToDictionaryAsync<long, Model>(m => m.Id, ct), delayBefore, delayAfter);
+        }
+
+        [Test]
+        [TestCase(2, 0)]
+        [TestCase(0, 2)]
+        public Task ToSetAsyncCancellation(int delayBefore, int delayAfter)
+        {
+            return TestCancellation((r, ct) => r.ToSetAsync<long>(ct), delayBefore: delayBefore, delayAfter);
+        }
+
+        [Test]
+        [TestCase(2, 0)]
+        [TestCase(0, 2)]
+        public Task ToLookupAsyncCancellation(int delayBefore, int delayAfter)
+        {
+            return TestCancellation((r, ct) => r.ToLookupAsync<long, Model>(m => m.Id, ct), delayBefore: delayBefore, delayAfter);
+        }
+
+        [Test]
+        [TestCase(2, 0)]
+        [TestCase(0, 2)]
+        public Task ToColumnAsyncCancellation(int delayBefore, int delayAfter)
+        {
+            return TestCancellation((r, ct) => r.ColumnAsync<long>(ct), delayBefore: delayBefore, delayAfter);
+        }
+
+        [Test]
+        [TestCase(2, 0)]
+        [TestCase(0, 2)]
+        public Task FirstAsyncCancellation(int delayBefore, int delayAfter)
+        {
+            return TestCancellation((r, ct) => r.FirstAsync<Model>(ct), delayBefore: delayBefore, delayAfter);
+        }
+
+        [Test]
+        [TestCase(2, 0)]
+        [TestCase(0, 2)]
+        public Task FirstOrDefaultAsyncCancellation(int delayBefore, int delayAfter)
+        {
+            return TestCancellation((r, ct) => r.FirstOrDefaultAsync<Model>(ct), delayBefore: delayBefore, delayAfter);
+        }
+
+        [Test]
+        [TestCase(2, 0)]
+        [TestCase(0, 2)]
+        public Task SingleAsyncCancellation(int delayBefore, int delayAfter)
+        {
+            return TestCancellation((r, ct) => r.SingleAsync<Model>(ct), delayBefore: delayBefore, delayAfter);
+        }
+
+        [Test]
+        [TestCase(2, 0)]
+        [TestCase(0, 2)]
+        public Task SingleOrDefaultAsyncCancellation(int delayBefore, int delayAfter)
+        {
+            return TestCancellation((r, ct) => r.SingleOrDefaultAsync<Model>(ct), delayBefore: delayBefore, delayAfter);
+        }
+
         private void CompareTableAndModel(Table1 expected, ModelSlim actual)
         {
             Assert.AreEqual(expected.Id, actual.Id);
@@ -214,6 +288,40 @@ namespace StoredProcedureEFCore.ITest
             Assert.AreEqual(expected.Date, actual.Date);
             Assert.AreEqual(expected.Active, actual.Active);
             Assert.AreEqual(expected.NameWithUnderscore, (int) actual.NameWithUnderscore);
+        }
+
+        private async Task TestCancellation(Func<DbDataReader, CancellationToken, Task> action, int delayBefore = 0, int delayAfter = 0)
+        {
+            await _db.Table1.AddRangeAsync(T1, T2, T3);
+            await _db.SaveChangesAsync();
+
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(TimeSpan.FromSeconds(1));
+
+            try
+            {
+                await _db.LoadStoredProc("delayed_list_all")
+                    .AddParam("delay_in_seconds_before_result_set", delayBefore)
+                    .AddParam("delay_in_seconds_after_result_set", delayAfter)
+                    .ExecAsync(r => action(r, cts.Token), cts.Token);
+
+                Assert.Fail("Stored procedure was not cancelled");
+            }
+            catch (Exception e)
+            {
+                switch (_dbProvider)
+                {
+                    case DbProvider.PgSql:
+                        StringAssert.Contains("57014", e.Message);
+                        break;
+                    case DbProvider.SqlServer:
+                        StringAssert.Contains("Operation cancelled by user", e.Message);
+                        break;
+                    default:
+                        Assert.Fail("Unhandled provider");
+                        break;
+                }
+            }
         }
     }
 
