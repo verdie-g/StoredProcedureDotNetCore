@@ -64,6 +64,7 @@ namespace StoredProcedureEFCore.ITest
 
             _db = new TestContext(optionsBuilder.Options);
             _db.Table1.RemoveRange(_db.Table1);
+
             await _db.SaveChangesAsync();
         }
 
@@ -275,6 +276,7 @@ namespace StoredProcedureEFCore.ITest
         {
             return TestCancellation((r, ct) => r.SingleOrDefaultAsync<Model>(ct), delayBefore: delayBefore, delayAfter);
         }
+
 
         private void CompareTableAndModel(Table1 expected, ModelSlim actual)
         {
