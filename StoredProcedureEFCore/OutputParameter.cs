@@ -26,8 +26,28 @@ namespace StoredProcedureEFCore
                     }
                 }
 
-                return (T) Convert.ChangeType(_dbParam.Value, typeof(T));
+                return GetValue();
             }
+        }
+
+        /// <summary>
+        /// Convert parameter value to type T, accounting for the special case of nullable generic types.
+        /// </summary>
+        private T GetValue()
+        {
+            var t = typeof(T);
+
+            if (t.IsGenericType && t.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            {
+                if (_dbParam.Value == null)
+                {
+                    return default;
+                }
+
+                t = Nullable.GetUnderlyingType(t);
+            }
+
+            return (T)Convert.ChangeType(_dbParam.Value, t);
         }
 
         public override string ToString() => _dbParam.Value.ToString();
