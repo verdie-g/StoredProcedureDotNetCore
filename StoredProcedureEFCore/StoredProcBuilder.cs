@@ -225,7 +225,7 @@ namespace StoredProcedureEFCore
 
             DbParameter param = _cmd.CreateParameter();
             param.ParameterName = name;
-            param.Value = (object)val ?? DBNull.Value;
+            param.Value = (object) val ?? DBNull.Value;
             param.Direction = direction;
             param.DbType = DbTypeConverter.ConvertToDbType<T>();
             param.Size = size;
@@ -251,7 +251,7 @@ namespace StoredProcedureEFCore
 
         private static T DefaultIfDBNull<T>(object o)
         {
-            return o == DBNull.Value ? default(T) : (T)o;
+            return o == DBNull.Value ? default(T) : (T) o;
         }
     }
 }
