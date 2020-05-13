@@ -12,7 +12,7 @@ namespace StoredProcedureEFCore
     {
         private const string RetParamName = "_retParam";
         private readonly DbCommand _cmd;
-        bool inTransaction = false;
+
         public StoredProcBuilder(DbContext ctx, string name)
         {
             if (name is null)
@@ -22,7 +22,6 @@ namespace StoredProcedureEFCore
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = name;
             cmd.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
-            inTransaction = ctx.Database.CurrentTransaction != null;
             cmd.CommandTimeout = ctx.Database.GetCommandTimeout().GetValueOrDefault(cmd.CommandTimeout);
 
             _cmd = cmd;
@@ -208,7 +207,7 @@ namespace StoredProcedureEFCore
 
         public void Dispose()
         {
-            if (!inTransaction)
+            if (_cmd.Transaction == null)
                 _cmd.Connection.Close();
             _cmd.Dispose();
         }
@@ -226,7 +225,7 @@ namespace StoredProcedureEFCore
 
             DbParameter param = _cmd.CreateParameter();
             param.ParameterName = name;
-            param.Value = (object) val ?? DBNull.Value;
+            param.Value = (object)val ?? DBNull.Value;
             param.Direction = direction;
             param.DbType = DbTypeConverter.ConvertToDbType<T>();
             param.Size = size;
@@ -252,7 +251,7 @@ namespace StoredProcedureEFCore
 
         private static T DefaultIfDBNull<T>(object o)
         {
-            return o == DBNull.Value ? default(T) : (T) o;
+            return o == DBNull.Value ? default(T) : (T)o;
         }
     }
 }
