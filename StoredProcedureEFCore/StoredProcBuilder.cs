@@ -12,6 +12,7 @@ namespace StoredProcedureEFCore
     {
         private const string RetParamName = "_retParam";
         private readonly DbCommand _cmd;
+        private readonly bool useTransaction;
 
         public StoredProcBuilder(DbContext ctx, string name)
         {
@@ -21,8 +22,14 @@ namespace StoredProcedureEFCore
             DbCommand cmd = ctx.Database.GetDbConnection().CreateCommand();
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.CommandText = name;
-            cmd.Transaction = ctx.Database.CurrentTransaction?.GetDbTransaction();
             cmd.CommandTimeout = ctx.Database.GetCommandTimeout().GetValueOrDefault(cmd.CommandTimeout);
+
+            var dbContextTransaction = ctx.Database.CurrentTransaction;
+            useTransaction = !(dbContextTransaction is null);
+            if (useTransaction)
+            {
+                cmd.Transaction = dbContextTransaction?.GetDbTransaction();
+            }
 
             _cmd = cmd;
         }
@@ -207,7 +214,11 @@ namespace StoredProcedureEFCore
 
         public void Dispose()
         {
-            _cmd.Connection.Close();
+            if (!useTransaction)
+            {
+                _cmd.Connection.Close();
+            }
+
             _cmd.Dispose();
         }
 
